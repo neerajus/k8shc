@@ -59,7 +59,7 @@ appUsageError()
 }
 
 
-#Check if runnings replicas are equal to desired replicas
+#Check if the count of running replicas are equal to desired replicas
 checkReplicas() {
         local a=$1
 
@@ -73,7 +73,7 @@ checkReplicas() {
         fi
 }
 
-#Output Appnname and status
+#Output Appname and status
 displayApp()
 {
 
@@ -95,7 +95,7 @@ displayApp()
 
 }
 
-
+#Make sure the kubectl and curl are installed and in the PATH
 KUBECTL=kubectl
 CURL=curl
 
