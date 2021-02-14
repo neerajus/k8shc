@@ -1,0 +1,219 @@
+#!/bin/bash
+
+
+#Prereqs 1: kubectl should be installed and configured 2: curl 
+
+
+
+mainHelp()
+{
+   echo "CLI tool to get healthcheck of a Kubernetes cluster and applications running on it\n"
+   echo "Usage: k8shc [--cluster|app|help]"
+   echo "options:"
+   echo
+   echo "cluster     Cluster Health Check"
+   echo "app         Applications Health Check"
+   echo "help        Print this Help"
+   echo 
+}
+
+clusterHelp()
+{
+   echo "Usage: k8shc --cluster|-c  [verbose|help]"
+   echo "Cluster     Cluster Health Check"
+   echo
+   echo "verbose     Cluster Health Verbose"
+   echo "help        Print this Help"
+   echo
+   echo "Note:        not compatible with --app/-a"
+}
+
+
+appHelp()
+{
+   echo "Usage: k8shc --app|-a  [-name appname]|[-namespace namespacename]|help]"
+   echo "Application health options:"
+   echo
+   echo "name      Health of single Application" 
+   echo "namespace Health of Application in a single namespace" 
+   echo "help      Print this Help"
+   echo
+   echo "Note:     not compatible with --cluster/-c"
+}
+
+
+clusterUsageError()
+{
+       echo "Usage Error: correct usage below:"
+       echo 
+       clusterHelp
+       exit 1
+}
+
+appUsageError()
+{
+       echo "Usage Error: correct usage below:"
+       echo 
+       appHelp
+       exit 1
+}
+
+
+#Check if runnings replicas are equal to desired replicas
+checkReplicas() {
+        local a=$1
+
+
+        #split ready/desired parameter and compare 
+        if [ ${a%/*} -gt 0 -a  ${a##*/} ==  ${a%/*} ]
+        then
+          return 0
+        else
+          return 1
+        fi
+}
+
+#Output Appnname and status
+displayApp()
+{
+
+     while read depl
+     do
+           local a=${depl% *}  # deployment name
+           local b=${depl##* } # Replicas ready/desired
+           checkReplicas $b    # Healthy if ready replicas equal to desired replicas
+           if [ $?  -eq 0 ]
+           then
+              health="Healthy"
+           else
+              health="Unhealthy"
+           fi
+
+           echo $a $health
+
+     done <  /tmp/$$
+
+}
+
+
+KUBECTL=kubectl
+CURL=curl
+
+# Cluster Specific Processing
+
+clusterFunc()
+{
+  if [ $# -gt 2 ]
+  then
+    clusterUsageError
+  fi
+  if [ $# -eq 1 ] # -c option
+  then 
+    #Get K8s Cluster APISERVER URL , first find  current context and then cluster name
+    currentcontext=`kubectl config current-context`
+    currentcluster=`kubectl config view -o jsonpath="{.contexts[?(@.name==\"$currentcontext\")].context.cluster}"`
+    # Find the server associated with current context cluster
+    APISERVER=`kubectl config view -o jsonpath="{.clusters[?(@.name==\"$currentcluster\")].cluster.server}"`
+
+    #Get Cluster Health status
+    echo -n "$APISERVER Cluster Health is: "
+    ${CURL} -k ${APISERVER}/healthz
+    echo
+  elif [ $2 == "verbose" ] # -c verbose option
+  then
+    #Get K8s Cluster APISERVER URL , first find  current context and then cluster name
+    currentcontext=`kubectl config current-context`
+    currentcluster=`kubectl config view -o jsonpath="{.contexts[?(@.name==\"$currentcontext\")].context.cluster}"`
+    # Find the server associated with current context cluster
+    APISERVER=`kubectl config view -o jsonpath="{.clusters[?(@.name==\"$currentcluster\")].cluster.server}"`
+
+    #Get health in verbose
+    echo "$APISERVER Cluster Health: "
+    ${CURL} -k ${APISERVER}/healthz?verbose
+  elif [ $2 == "help" ]
+  then
+    clusterHelp
+  else
+    clusterUsageError
+  fi
+   
+}
+
+
+#Process applications
+appFunc()
+{
+  if [ $# -gt 5  ]
+  then
+    appUsageError
+  fi
+
+  rm -f /tmp/$$
+
+  if [ $# -eq 1 ] # means show all apps
+  then
+     ${KUBECTL} get deployments -A --no-headers | awk '{ print  $1":"$2 " " $3 }' > /tmp/$$
+     displayApp
+     rm -f /tmp/$$
+  elif [ $2 == "help" ]
+  then
+    appHelp
+  elif [ $2 == "-name" -a $# -lt 4 ] # means list single app in current namesapce
+  then
+     if [ -z $3 ]
+     then
+       appUsageError
+     fi
+     ${KUBECTL} get deployments $3 --no-headers | awk '{ print  $1 " " $2 }' > /tmp/$$
+     displayApp
+  elif [ $2 == "-namespace" -a $# -lt 4 ] # means list all apps in current namesapce
+  then
+     if [ -z $3 ]
+     then
+       appUsageError
+     fi
+     ${KUBECTL} get deployments -n $3 --no-headers | awk '{ print  $1 " " $2 }' > /tmp/$$
+     displayApp
+  elif [ $2 == "-name" -a $4 == "-namespace"  -a $# -lt 6 ] # means list a single app in a single namesapce
+  then
+     if [ -z $3  -o -z $5 ]
+     then
+       appUsageError
+     fi
+     ${KUBECTL} get deployments $3 -n $5 --no-headers | awk '{ print  $1 " " $2 }' > /tmp/$$
+     displayApp
+  elif [ $2 == "-namespace" -a $4 == "-name"  -a $# -lt 6 ] # means list a single app in a single namesapce in a different order
+  then
+     if [ -z $3  -o -z $5 ]
+     then
+       appUsageError
+     fi
+     ${KUBECTL} get deployments $5 -n $3 --no-headers | awk '{ print  $1 " " $2 }' > /tmp/$$
+     displayApp
+  else
+     appUsageError
+  fi
+
+  rm -f /tmp/$$
+  
+
+}
+if [ $# -eq 0 ]
+then
+  echo "Usage Error: correct usage below:"
+  echo
+  mainHelp
+  exit
+fi
+
+case $1 in
+    -c | --cluster) clusterFunc  $@ ;;
+    -a | --app) appFunc $@ ;;
+    -h | --help) mainHelp ;;
+    *) echo "Usage Error: correct usage below:"
+       echo
+       mainHelp
+      ;;
+
+esac
+
