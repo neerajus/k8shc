@@ -7,9 +7,9 @@
 
 mainHelp()
 {
-   echo "CLI tool to get healthcheck of a Kubernetes cluster and applications running on it\n"
+   echo "CLI tool to get healthcheck of a Kubernetes cluster and applications running on it"
    echo "Usage: k8shc [--cluster|app|help]"
-   echo "options:"
+   echo "Kubernetes Health Check Tool options"
    echo
    echo "cluster     Cluster Health Check"
    echo "app         Applications Health Check"
@@ -20,9 +20,9 @@ mainHelp()
 clusterHelp()
 {
    echo "Usage: k8shc --cluster|-c  [verbose|help]"
-   echo "Cluster     Cluster Health Check"
+   echo "Cluster Health Check options"
    echo
-   echo "verbose     Cluster Health Verbose"
+   echo "verbose     Cluster health check in verbose"
    echo "help        Print this Help"
    echo
    echo "Note:        not compatible with --app/-a"
@@ -32,10 +32,10 @@ clusterHelp()
 appHelp()
 {
    echo "Usage: k8shc --app|-a  [-name appname]|[-namespace namespacename]|help]"
-   echo "Application health options:"
+   echo "Application Health Check options:"
    echo
-   echo "name      Health of single Application" 
-   echo "namespace Health of Application in a single namespace" 
+   echo "name      Health of s single application" 
+   echo "namespace Health of aplications in a single namespace" 
    echo "help      Print this Help"
    echo
    echo "Note:     not compatible with --cluster/-c"
