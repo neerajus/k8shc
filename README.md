@@ -2,6 +2,10 @@ This repository contains a CLI tool 'k8shc' which can be run to quickly find hea
 
 Usage:
 
+Instructions : Download or Clone this repository and grant execute permission to script k8shc using "chmod +x k8shc"
+
+Usage:
+
 $  ./k8shc --help
 CLI tool to get healthcheck of a Kubernetes cluster and applications running on it
 Usage: k8shc [--cluster|app|help]
@@ -37,7 +41,7 @@ Notes:
 2.  Kubernetes applications can mean different things, but in this tool I equate them to K8s deployments. I know that an application can be installed in other ways like pods or statefulsets, but deployments are the most common way of installing K8s applications.
 3. An application or a deployment is considered healthy if number of ready pods are equal of the desired number of pods defined in its replicaset. It is assumed that the pods are configured with proper readiness or liveliness probes as Kubernetes cluster rely on them heavily to find the health of pods.
 4. The applications can be internal or exposed externally using services, ingress. So I cannot assume that the service will be accessible from outside the cluster and if attached network poilicies allow such access. So tool does not make any direct network connection to applications. 
-5. Except of the requirement listed below, the tool is a self contained bash script. It should with bash version 3.2.57 or later. 
+5. Except of the requirement listed below, the tool is a self contained bash script. It should work with bash version 3.2.57 or later on a Linux box. 
 
 
 
